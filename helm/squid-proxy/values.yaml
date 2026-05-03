@@ -1,0 +1,64 @@
+# ============================================================
+# values.yaml — Squid Forward Proxy
+# ============================================================
+
+image:
+  repository: ubuntu/squid
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Namespace cho Squid
+namespace: squid
+
+# Node selector — chỉ chạy trên proxy-node có EIP
+nodeSelector:
+  node-role: proxy-node
+
+# Toleration để schedule lên proxy-node (có taint proxy-only)
+tolerations:
+  - key: "proxy-only"
+    operator: "Equal"
+    value: "true"
+    effect: "NoSchedule"
+
+# Resource limits
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+# Squid port
+squid:
+  port: 3128
+
+  # Danh sách domain partner được phép gọi ra
+  # Thêm domain mới vào đây rồi helm upgrade là xong
+  allowedDomains:
+    - ifconfig.me
+
+  # CIDR nội bộ — không bị proxy
+  localNetworks:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+
+  # DNS server (AWS VPC DNS)
+  dnsNameserver: 169.254.169.253
+
+# Internal NLB — app pods dùng DNS này để gọi Squid
+service:
+  type: ClusterIP
+  port: 3128
+  annotations: {}
+
+# Inject HTTP_PROXY vào app pods theo namespace
+# Set enabled: true và liệt kê namespace cần inject
+proxyInjector:
+  enabled: true
+  # Squid service DNS (tự động từ chart)
+  # Override nếu muốn dùng IP/DNS khác
+  proxyUrl: ""  # auto: http://squid-proxy.<namespace>.svc.cluster.local:3128
+  noProxy: "localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.cluster.local,.svc"

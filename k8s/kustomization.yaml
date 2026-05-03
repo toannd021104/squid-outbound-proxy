@@ -1,0 +1,35 @@
+# ============================================================
+# Kustomize patch — inject HTTP_PROXY vào tất cả app Deployment
+# Apply vào namespace chứa app workload
+# ============================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default
+
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: not-important
+      spec:
+        template:
+          spec:
+            containers:
+              - name: not-important
+                env:
+                  - name: HTTP_PROXY
+                    value: "http://squid-proxy.squid.svc.cluster.local:3128"
+                  - name: HTTPS_PROXY
+                    value: "http://squid-proxy.squid.svc.cluster.local:3128"
+                  - name: NO_PROXY
+                    value: "localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.cluster.local,.svc"
+                  - name: http_proxy
+                    value: "http://squid-proxy.squid.svc.cluster.local:3128"
+                  - name: https_proxy
+                    value: "http://squid-proxy.squid.svc.cluster.local:3128"
+                  - name: no_proxy
+                    value: "localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.cluster.local,.svc"
+    target:
+      kind: Deployment

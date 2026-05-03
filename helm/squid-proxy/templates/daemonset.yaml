@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "squid-proxy.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "squid-proxy.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "squid-proxy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "squid-proxy.selectorLabels" . | nindent 8 }}
+    spec:
+      # Dùng network stack của node → src IP = EIP của node
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+
+      containers:
+        - name: squid
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: proxy
+              containerPort: {{ .Values.squid.port }}
+              hostPort: {{ .Values.squid.port }}
+              protocol: TCP
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          volumeMounts:
+            - name: squid-config
+              mountPath: /etc/squid/squid.conf
+              subPath: squid.conf
+
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.squid.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 15
+
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.squid.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+      volumes:
+        - name: squid-config
+          configMap:
+            name: {{ include "squid-proxy.fullname" . }}-config
