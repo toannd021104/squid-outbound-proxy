@@ -1,0 +1,15 @@
+{{- range .Values.deployments }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  template:
+    spec:
+      containers:
+        - name: {{ .containerName | default .name }}
+          env:
+            {{- include "proxy-injector.proxyEnvs" $ | nindent 12 }}
+{{- end }}

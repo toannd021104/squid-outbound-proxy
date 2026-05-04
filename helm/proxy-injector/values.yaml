@@ -1,0 +1,19 @@
+# ============================================================
+# values.yaml — Proxy Injector
+# Deploy chart này vào namespace app để inject HTTP_PROXY
+# ============================================================
+
+# Squid proxy URL — trỏ đến squid-proxy service
+proxy:
+  httpProxy:  "http://squid-proxy.squid.svc.cluster.local:3128"
+  httpsProxy: "http://squid-proxy.squid.svc.cluster.local:3128"
+  noProxy:    "localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.cluster.local,.svc"
+
+# Danh sách Deployment cần inject
+# Mỗi item là tên Deployment trong namespace đang deploy chart
+deployments: []
+# Ví dụ:
+# deployments:
+#   - name: payment-service
+#   - name: order-service
+#   - name: inventory-service
