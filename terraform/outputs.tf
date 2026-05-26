@@ -23,7 +23,7 @@ output "proxy_subnet_id" {
   value = aws_subnet.proxy.id
 }
 
-output "squid_nlb_dns" {
-  description = "DNS of internal NLB Squid - set as HTTP_PROXY in app"
-  value       = "Run: kubectl get svc squid-proxy -n squid to get NLB DNS"
+output "squid_service_dns" {
+  description = "ClusterIP service DNS for Squid - set as HTTP_PROXY/HTTPS_PROXY in app"
+  value       = "http://squid-proxy.squid.svc.cluster.local:3128"
 }

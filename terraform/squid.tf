@@ -6,8 +6,8 @@ resource "helm_release" "squid_proxy" {
   chart            = "${path.module}/../helm/squid-proxy"
   namespace        = "squid"
   create_namespace = true
-  timeout          = 600   # 10 phút — chờ NLB ready
-  wait             = false  # Không chờ pod/svc ready, tránh timeout
+  timeout          = 600   # 10 phút — chờ Kubernetes API/Helm operation
+  wait             = false # Không chờ pod/svc ready, tránh timeout
 
   # Domain whitelist từ variables.tf
   dynamic "set" {
@@ -50,7 +50,7 @@ resource "aws_security_group" "squid" {
   }
 
   ingress {
-    description = "NLB health check"
+    description = "Internal VPC clients and health checks"
     from_port   = 3128
     to_port     = 3128
     protocol    = "tcp"

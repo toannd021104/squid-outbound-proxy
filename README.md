@@ -9,10 +9,10 @@
 ## Kiến trúc
 
 ```
-App Pods (Public Subnet 10.0.40.0/24)
+App Pods (Private App Subnet 10.0.10.0/24)
   │  HTTP_PROXY=http://squid-proxy.squid.svc:3128
   ↓
-Squid DaemonSet (hostNetwork=true)
+Squid DaemonSet on Proxy Nodes (Public Proxy Subnet 10.0.40.0/24, hostNetwork=true)
   │  ACL whitelist domain
   │  src IP = EIP của node
   ↓
@@ -62,7 +62,7 @@ terraform output proxy_eips
 
 ```bash
 # Update kubeconfig
-aws eks update-kubeconfig --name eks-outbound-proxy --region ap-southeast-2
+aws eks update-kubeconfig --name frt-outbound-proxy --region ap-southeast-2
 
 # Test gọi qua Squid
 kubectl run curl-test --image=curlimages/curl --restart=Never -- sleep 3600

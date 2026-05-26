@@ -27,8 +27,8 @@ variable "app_subnet_cidr" {
   default     = "10.0.10.0/24"
 }
 
-variable "alb_subnet_cidr" {
-  description = "Private subnet — Internal NLB (Local Zone)"
+variable "internal_services_subnet_cidr" {
+  description = "Reserved private subnet for internal services or future load balancers (Local Zone)"
   default     = "10.0.20.0/24"
 }
 

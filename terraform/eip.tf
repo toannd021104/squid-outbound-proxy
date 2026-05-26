@@ -2,9 +2,15 @@
 # EIP — Reserve cố định trước
 # Partner whitelist các IP này
 # ============================================================
+locals {
+  local_zone_network_border_group = replace(var.local_zone, "/[a-z]$/", "")
+}
+
 resource "aws_eip" "proxy_worker" {
-  count  = var.eip_count
-  domain = "vpc"
+  count = var.eip_count
+
+  domain               = "vpc"
+  network_border_group = local.local_zone_network_border_group
 
   tags = {
     Name    = "${var.cluster_name}-proxy-eip-${count.index}"

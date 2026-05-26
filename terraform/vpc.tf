@@ -21,7 +21,7 @@ resource "aws_internet_gateway" "main" {
 resource "aws_subnet" "cp_az1" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.100.0/24"
-  availability_zone = "${var.region}a"  # ap-southeast-2a
+  availability_zone = "${var.region}a" # ap-southeast-2a
 
   tags = {
     Name                                        = "${var.cluster_name}-cp-az1"
@@ -32,7 +32,7 @@ resource "aws_subnet" "cp_az1" {
 resource "aws_subnet" "cp_az2" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.101.0/24"
-  availability_zone = "${var.region}b"  # ap-southeast-2b
+  availability_zone = "${var.region}b" # ap-southeast-2b
 
   tags = {
     Name                                        = "${var.cluster_name}-cp-az2"
@@ -58,14 +58,14 @@ resource "aws_subnet" "app" {
   }
 }
 
-# Private - Internal ALB/NLB (10.0.20.0/24)
-resource "aws_subnet" "alb" {
+# Private - Reserved internal services subnet (10.0.20.0/24)
+resource "aws_subnet" "internal_services" {
   vpc_id            = aws_vpc.main.id
-  cidr_block        = var.alb_subnet_cidr
+  cidr_block        = var.internal_services_subnet_cidr
   availability_zone = var.local_zone
 
   tags = {
-    Name                                        = "${var.cluster_name}-alb"
+    Name                                        = "${var.cluster_name}-internal-services"
     "kubernetes.io/role/internal-elb"           = "1"
     "kubernetes.io/cluster/${var.cluster_name}" = "shared"
   }
@@ -76,7 +76,7 @@ resource "aws_subnet" "proxy" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.proxy_subnet_cidr
   availability_zone       = var.local_zone
-  map_public_ip_on_launch = true   # Cần bật để EKS managed node group hoạt động — EIP gắn đè lên sau bởi Lambda
+  map_public_ip_on_launch = true # Cần bật để EKS managed node group hoạt động — EIP gắn đè lên sau bởi Lambda
 
   tags = {
     Name                                        = "${var.cluster_name}-proxy"
@@ -134,13 +134,13 @@ resource "aws_route_table_association" "app" {
   route_table_id = aws_route_table.app.id
 }
 
-# ALB subnet route table
-resource "aws_route_table" "alb" {
+# Internal services subnet route table
+resource "aws_route_table" "internal_services" {
   vpc_id = aws_vpc.main.id
-  tags   = { Name = "${var.cluster_name}-alb-rt" }
+  tags   = { Name = "${var.cluster_name}-internal-services-rt" }
 }
 
-resource "aws_route_table_association" "alb" {
-  subnet_id      = aws_subnet.alb.id
-  route_table_id = aws_route_table.alb.id
+resource "aws_route_table_association" "internal_services" {
+  subnet_id      = aws_subnet.internal_services.id
+  route_table_id = aws_route_table.internal_services.id
 }

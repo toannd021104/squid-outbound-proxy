@@ -22,6 +22,19 @@ module "eks" {
 
   cluster_endpoint_private_access = true
 
+  enable_cluster_creator_admin_permissions = true
+
+  node_security_group_additional_rules = {
+    ingress_squid_from_vpc = {
+      description = "Allow app nodes and pods to reach Squid hostPort"
+      protocol    = "tcp"
+      from_port   = 3128
+      to_port     = 3128
+      type        = "ingress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+  }
+
   # ============================================================
   # Node Group 1: Proxy Nodes (Squid)
   # Chạy ở Local Zone — public subnet — có EIP
@@ -43,7 +56,7 @@ module "eks" {
         xvda = {
           device_name = "/dev/xvda"
           ebs = {
-            volume_type = "gp2"   # Local Zone Perth không support gp3
+            volume_type = "gp2" # Local Zone Perth không support gp3
             volume_size = 20
           }
         }
@@ -61,16 +74,16 @@ module "eks" {
 
       # Tag để Lambda EIP manager nhận biết đây là proxy node
       tags = {
-        "proxy-node"                                         = "true"
-        "k8s.io/cluster-autoscaler/enabled"                 = "true"
-        "k8s.io/cluster-autoscaler/${var.cluster_name}"     = "owned"
+        "proxy-node"                                    = "true"
+        "k8s.io/cluster-autoscaler/enabled"             = "true"
+        "k8s.io/cluster-autoscaler/${var.cluster_name}" = "owned"
       }
     }
 
     # ============================================================
     # Node Group 2: App Nodes
-    # Chạy ở Local Zone — private subnet
-    # Không có internet trực tiếp → phải đi qua Squid
+    # Chạy ở Local Zone trong private app subnet.
+    # App outbound HTTP/HTTPS vẫn phải đi qua Squid bằng proxy env vars.
     # ============================================================
     app_nodes = {
       name           = "app-nodes"
@@ -80,16 +93,15 @@ module "eks" {
       max_size     = 10
       desired_size = 2
 
-      # App node cũng cần đặt trong public subnet để bootstrap được về EKS CP
-      # App subnet (private) không có route ra ngoài lúc node join
+      # Private app nodes dùng EKS private endpoint và VPC endpoints để bootstrap.
       # Traffic app pod vẫn đi qua Squid nhờ HTTP_PROXY env var
-      subnet_ids = [aws_subnet.proxy.id]
+      subnet_ids = [aws_subnet.app.id]
 
       block_device_mappings = {
         xvda = {
           device_name = "/dev/xvda"
           ebs = {
-            volume_type = "gp2"   # Local Zone Perth không support gp3
+            volume_type = "gp2" # Local Zone Perth không support gp3
             volume_size = 20
           }
         }
