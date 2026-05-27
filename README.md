@@ -4,7 +4,7 @@ Squid forward proxy pattern for private EKS workloads running in an AWS Local Zo
 
 It lets app pods stay private, route outbound HTTP/HTTPS traffic through Squid, use fixed Elastic IPs for partner whitelisting, and block non-approved domains with Squid ACLs.
 
-![Squid Outbound Proxy Architecture](docs/architecture.png)
+![Squid Outbound Proxy Architecture](docs/architecture-overview.jpg)
 
 ## Highlights
 
@@ -138,6 +138,10 @@ env:
 
 ## Verification
 
+The lab was verified with a debug pod running on the private app node group and Squid pods running on the public proxy node group.
+
+![Node placement evidence](docs/01-node-placement.png)
+
 Create a debug pod on an app node:
 
 ```bash
@@ -156,6 +160,8 @@ kubectl exec curl-test -- \
 
 Traffic through Squid should return one of the proxy node EIPs:
 
+![Egress through Squid evidence](docs/02-egress-through-proxy.png)
+
 ```bash
 kubectl exec curl-test -- \
   curl -sS \
@@ -164,6 +170,8 @@ kubectl exec curl-test -- \
 ```
 
 Non-whitelisted domains should be denied:
+
+![Squid ACL denied domain evidence](docs/03-acl-denied-domain.png)
 
 ```bash
 kubectl exec curl-test -- \
@@ -175,6 +183,8 @@ kubectl exec curl-test -- \
 Expected result: Squid returns `ERR_ACCESS_DENIED`.
 
 Filter Squid logs:
+
+![Filtered Squid logs evidence](docs/04-squid-filtered-logs.png)
 
 ```bash
 kubectl logs -n squid -l app.kubernetes.io/name=squid-proxy --tail=200 | \
@@ -324,4 +334,4 @@ Built by [toannd021104](https://github.com/toannd021104) as a DevOps/AWS network
 ## More Details
 
 - Blog post: [Tự làm NAT Gateway trên AWS Local Zone bằng Squid + EIP](https://toannd021104.github.io/devops-blog)
-- Architecture diagram: [docs/architecture.png](docs/architecture.png)
+- Architecture diagram: [docs/architecture-overview.jpg](docs/architecture-overview.jpg)
