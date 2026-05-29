@@ -60,14 +60,14 @@ Public Proxy Subnet: 10.0.40.0/24
 
 Key components:
 
-| Component | Purpose |
-| --- | --- |
-| App node group | Runs private application workloads |
-| Proxy node group | Runs Squid proxy pods |
-| Squid ClusterIP Service | Internal proxy endpoint for app pods |
-| Elastic IPs | Fixed source IPs for partner whitelisting |
-| Lambda EIP manager | Re-attaches available EIPs when proxy nodes are recreated |
-| VPC endpoints | Allow private nodes to bootstrap and pull images without NAT |
+| Component               | Purpose                                                      |
+| ----------------------- | ------------------------------------------------------------ |
+| App node group          | Runs private application workloads                           |
+| Proxy node group        | Runs Squid proxy pods                                        |
+| Squid ClusterIP Service | Internal proxy endpoint for app pods                         |
+| Elastic IPs             | Fixed source IPs for partner whitelisting                    |
+| Lambda EIP manager      | Re-attaches available EIPs when proxy nodes are recreated    |
+| VPC endpoints           | Allow private nodes to bootstrap and pull images without NAT |
 
 ## Repository Layout
 
@@ -197,7 +197,7 @@ Allowed domains are managed in Terraform and rendered into Squid ACLs by Helm:
 
 ```hcl
 variable "partner_domains" {
-  description = "Domain partner được phép đi qua Squid"
+  description = "Partner domains allowed to go through Squid"
   type        = list(string)
   default = [
     "ifconfig.me",
@@ -217,11 +217,11 @@ variable "proxy_node_max" {
 }
 ```
 
-Domain không nằm trong whitelist sẽ bị Squid trả `403`.
+If a domain is not on the whitelist, Squid returns `403`.
 
-### 8. App workload dùng proxy
+### 8. Application Workloads Use Proxy
 
-App workload chỉ cần cấu hình proxy env:
+Application workloads only need the proxy environment variables:
 
 ```yaml
 env:
@@ -233,7 +233,7 @@ env:
     value: localhost,127.0.0.1,10.0.0.0/8,.cluster.local,.svc
 ```
 
-## Deploy
+## Deployment
 
 ```bash
 cd terraform
@@ -242,7 +242,7 @@ terraform plan -var="aws_profile=<YOUR_PROFILE>"
 terraform apply -var="aws_profile=<YOUR_PROFILE>"
 ```
 
-Lấy thông tin sau deploy:
+Read the outputs after deployment:
 
 ```bash
 terraform output cluster_name
@@ -250,9 +250,9 @@ terraform output proxy_eips
 terraform output squid_service_dns
 ```
 
-## Test
+## Testing
 
-Cập nhật kubeconfig:
+Update kubeconfig:
 
 ```bash
 aws eks update-kubeconfig \
@@ -261,7 +261,7 @@ aws eks update-kubeconfig \
   --profile <YOUR_PROFILE>
 ```
 
-Tạo test pod trên app node private:
+Create a test pod on the private app node:
 
 ```bash
 kubectl run curl-test \
@@ -270,14 +270,14 @@ kubectl run curl-test \
   --overrides='{"spec":{"nodeSelector":{"node-role":"app-node"},"containers":[{"name":"curl-test","image":"curlimages/curl","command":["sleep","3600"]}]}}'
 ```
 
-Test app pod không có internet trực tiếp:
+Verify the app pod has no direct internet access:
 
 ```bash
 kubectl exec curl-test -- \
   curl -m 5 -sS http://ifconfig.me/ip
 ```
 
-Test đi qua Squid:
+Verify traffic through Squid:
 
 ```bash
 kubectl exec curl-test -- \
@@ -286,9 +286,9 @@ kubectl exec curl-test -- \
   http://ifconfig.me/ip
 ```
 
-Kết quả mong muốn: trả về một trong các EIP của proxy node.
+Expected result: one of the proxy node EIPs is returned.
 
-Test domain bị chặn:
+Verify the blocked domain:
 
 ```bash
 kubectl exec curl-test -- \
@@ -297,19 +297,19 @@ kubectl exec curl-test -- \
   http://google.com
 ```
 
-Kết quả mong muốn: Squid trả `ERR_ACCESS_DENIED`.
+Expected result: Squid returns `ERR_ACCESS_DENIED`.
 
-Lọc log liên quan tới lab:
+Filter lab-related logs:
 
 ```bash
 kubectl logs -n squid -l app.kubernetes.io/name=squid-proxy --tail=200 | \
   grep -E 'ifconfig.me|google.com|TCP_DENIED|TCP_TUNNEL|TCP_MISS'
 ```
 
-- `curl-test` chạy trên app node private `10.0.10.246`, không có external IP.
-- Hai Squid pods chạy trên proxy nodes `10.0.40.46` và `10.0.40.90`.
-- Request tới `ifconfig.me` qua proxy trả về EIP của proxy node.
-- Request tới `google.com` bị `TCP_DENIED`.
+- `curl-test` runs on the private app node `10.0.10.246` with no external IP.
+- The two Squid pods run on proxy nodes `10.0.40.46` and `10.0.40.90`.
+- Requests to `ifconfig.me` through the proxy return a proxy node EIP.
+- Requests to `google.com` are denied with `TCP_DENIED`.
 
 ## Destroy
 
@@ -333,5 +333,5 @@ Built by [toannd021104](https://github.com/toannd021104) as a DevOps/AWS network
 
 ## More Details
 
-- Blog post: [Tự làm NAT Gateway trên AWS Local Zone bằng Squid + EIP](https://toannd021104.github.io/devops-blog)
+- Blog post: [How to Build NAT Gateway on AWS Local Zone with Squid + EIP](https://toannd021104.github.io/devops-blog)
 - Architecture diagram: [docs/architecture-overview.jpg](docs/architecture-overview.jpg)
